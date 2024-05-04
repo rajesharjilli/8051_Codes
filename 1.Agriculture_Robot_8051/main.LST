@@ -1,0 +1,227 @@
+C51 COMPILER V8.02   MAIN                                                                  09/09/2022 15:52:11 PAGE 1   
+
+
+C51 COMPILER V8.02, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE main.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          #include<reg52.h>
+   2          
+   3          
+   4          
+   5          /**relay connections****/
+   6          sbit L1_in1 = P3^3;
+   7          sbit L1_in2 = P3^4;
+   8          sbit L1_in3 = P3^5;
+   9          sbit L1_in4 = P3^6;
+  10          
+  11          /**L293D1 on board connections****/
+  12          sbit L2_in1 = P2^4;
+  13          sbit L2_in2 = P2^5;
+  14          sbit L2_in3 = P2^6;
+  15          sbit L2_in4 = P2^7;
+  16          
+  17          sbit pump = P0^7;
+  18          
+  19                                          
+  20          void delay(unsigned int value);
+  21          
+  22          unsigned char key;
+  23          
+  24          void Ext_int_Init()                             
+  25          {
+  26   1              EA  = 1;                /* Enable global interrupt */
+  27   1              ES = 1;                 /* Enable serial interrupt */                   
+  28   1      }
+  29          
+  30          void UART_Init()
+  31          {
+  32   1              TMOD = 0x20;            /* Timer 1, 8-bit auto reload mode */
+  33   1              TH1 = 0xFD;             /* Load value for 9600 baud rate */
+  34   1              SCON = 0x50;            /* Mode 1, reception enable */
+  35   1              TR1 = 1;                /* Start timer 1 */
+  36   1      }
+  37          
+  38          void Transmit_data(char tx_data)
+  39          {
+  40   1              SBUF = tx_data;         /* Load char in SBUF register */
+  41   1              while (TI==0);          /* Wait until stop bit transmit */
+  42   1              TI = 0;                 /* Clear TI flag */
+  43   1      }
+  44          
+  45          void uart_puts(char *str)
+  46          {
+  47   1              int i;
+  48   1              for(i=0;str[i]!=0;i++)  /* Send each char of string till the NULL */
+  49   1              {
+  50   2                      Transmit_data(str[i]);  /* Call transmit data function */
+  51   2              }
+  52   1      }
+  53          
+  54          void Serial_ISR() interrupt 4    
+  55          {
+C51 COMPILER V8.02   MAIN                                                                  09/09/2022 15:52:11 PAGE 2   
+
+  56   1              char key = SBUF;                /* Give received data on port 1 */
+  57   1              RI = 0;                 /* Clear RI flag */
+  58   1              if(key=='1')                    //L1 robot forward
+  59   1          {
+  60   2                uart_puts("\n\r forward");
+  61   2            L1_in1 = 1;
+  62   2            L1_in2 = 0;
+  63   2            L1_in3 = 1;
+  64   2            L1_in4 = 0;
+  65   2              }
+  66   1          
+  67   1         if(key=='2')            //L1 robot backward
+  68   1         {
+  69   2            uart_puts("\n\r backward");
+  70   2      
+  71   2            L1_in1 = 0;
+  72   2            L1_in2 = 1;
+  73   2            L1_in3 = 0;
+  74   2            L1_in4 = 1;
+  75   2         }
+  76   1          
+  77   1         if(key=='3')           //robot right
+  78   1         {
+  79   2                uart_puts("\n\r Right");
+  80   2      
+  81   2            L1_in1 = 1;
+  82   2            L1_in2 = 0;
+  83   2            L1_in3 = 0;
+  84   2            L1_in4 = 1;
+  85   2      
+  86   2         }
+  87   1      
+  88   1         if(key=='4')           //robot left
+  89   1         {
+  90   2                uart_puts("\n\r Left");
+  91   2      
+  92   2            L1_in1 = 0;
+  93   2            L1_in2 = 1;
+  94   2            L1_in3 = 1;
+  95   2            L1_in4 = 0;
+  96   2               
+  97   2         }
+  98   1            if(key=='6')                //L2 UP
+  99   1         {
+ 100   2            uart_puts("\n\r UP");
+ 101   2                L2_in1 = 0;
+ 102   2            L2_in2 = 1;
+ 103   2                delay(500);
+ 104   2            L2_in1 = 0;
+ 105   2            L2_in2 = 0;
+ 106   2         }
+ 107   1      
+ 108   1         if(key=='7')           //L2 DOWN
+ 109   1         {
+ 110   2            uart_puts("\n\r Down");
+ 111   2                L2_in1 = 1;
+ 112   2            L2_in2 = 0;
+ 113   2                delay(500);
+ 114   2            L2_in1 = 0;
+ 115   2            L2_in2 = 0;                        
+ 116   2         }
+ 117   1      
+C51 COMPILER V8.02   MAIN                                                                  09/09/2022 15:52:11 PAGE 3   
+
+ 118   1         if(key=='8')           //L2 Cutter On
+ 119   1         {
+ 120   2           uart_puts("\n\r Cutter On");
+ 121   2                L2_in3 = 1;
+ 122   2            L2_in4 = 0;
+ 123   2                
+ 124   2         }
+ 125   1      
+ 126   1         if(key=='9')           //L2 Cutter Off
+ 127   1         {
+ 128   2            uart_puts("\n\r Cutter Off");
+ 129   2                L2_in3 = 0;
+ 130   2            L2_in4 = 0;
+ 131   2         }
+ 132   1      
+ 133   1            if(key=='w')                //L2 Water On
+ 134   1         {
+ 135   2            uart_puts("\n\r Water on");
+ 136   2            pump = 1;
+ 137   2         }
+ 138   1      
+ 139   1           if((key=='s') || (key == '5'))               //L2 Water Off
+ 140   1         {
+ 141   2            uart_puts("\n\r Water off");
+ 142   2            pump = 0;
+ 143   2         }
+ 144   1      
+ 145   1         if(key=='5')          //all 32stop
+ 146   1         {
+ 147   2            uart_puts("\n\r Stop");
+ 148   2      
+ 149   2            L1_in1 = 0;
+ 150   2            L1_in2 = 0;
+ 151   2            L1_in3 = 0;
+ 152   2            L1_in4 = 0;
+ 153   2                L2_in1 = 0;
+ 154   2            L2_in2 = 0;
+ 155   2            L2_in3 = 0;
+ 156   2            L2_in4 = 0;
+ 157   2      
+ 158   2         }
+ 159   1      
+ 160   1      }
+ 161          
+ 162          
+ 163          
+ 164          
+ 165          
+ 166          void main()
+ 167          {
+ 168   1            L1_in1 = 0;
+ 169   1            L1_in2 = 0;
+ 170   1            L1_in3 = 0;
+ 171   1            L1_in4 = 0;
+ 172   1      
+ 173   1                L2_in1 = 0;
+ 174   1            L2_in2 = 0;
+ 175   1            L2_in3 = 0;
+ 176   1            L2_in4 = 0;
+ 177   1      
+ 178   1      
+ 179   1                uart_puts("1-front, 2-back, 3-left, 4-right, 5-stop");
+C51 COMPILER V8.02   MAIN                                                                  09/09/2022 15:52:11 PAGE 4   
+
+ 180   1                uart_puts("6-up,7-Down,8-Cutter On,9-Cutter Off,w-water on, s-water stop");
+ 181   1                pump = 0;
+ 182   1      
+ 183   1              Ext_int_Init();
+ 184   1              UART_Init();            /* UART initialize function */           
+ 185   1              delay(1);
+ 186   1              uart_puts("Welcome ");   Transmit_data('\n');
+ 187   1              while(1)
+ 188   1              {
+ 189   2              uart_puts("Send command \n\r"); Transmit_data('\n'); delay(100);
+ 190   2              }       
+ 191   1       } 
+ 192          
+ 193          void delay(unsigned int value)
+ 194          {
+ 195   1       unsigned int x,y;
+ 196   1       for(x=0;x<200;x++)
+ 197   1       for(y=0;y<value;y++);
+ 198   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    490    ----
+   CONSTANT SIZE    =    242    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
